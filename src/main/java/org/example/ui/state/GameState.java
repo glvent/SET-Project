@@ -1,7 +1,11 @@
-package org.example.ui;
+package org.example.ui.state;
+
+import java.awt.*;
 
 public interface GameState {
     void update();
-    void render();
-    void handle_input();
+    void render(Graphics g);
+    void handleInput();
+    void onEnter();
+    void onExit();
 }
