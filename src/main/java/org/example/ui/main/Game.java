@@ -1,73 +1,56 @@
 package org.example.ui.main;
 
-import javax.swing.*;
-
-public class Game extends JFrame implements Runnable {
-    public GamePanel gamePanel;
-    volatile int FPS = 0;
-    int SHOWN_FPS = 0;
-
-    GameStateManager gsm;
+public class Game implements Runnable {
+    public GameFrame gf;
+    public GamePanel gp;
+    Thread gameThread;
+    int SHOWN_FPS = 0; // for logging
 
     public Game() {
-        gamePanel = new GamePanel(this);
-        this.add(gamePanel);
-        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        this.setLocationRelativeTo(null);
-        this.setSize(800, 600);
-        this.setVisible(true);
+        gp = new GamePanel(this);
+        gf = new GameFrame(this);
+    }
 
-        gsm = new GameStateManager(gamePanel);
+    public static void main(String[] args) {
+        Game game = new Game();
+        game.startGameThread();
+    }
+
+    public void startGameThread() {
+        gameThread = new Thread(this);
+        gameThread.start();
     }
 
     @Override
     public void run() {
-        long lastTime = System.nanoTime();
         int FPS_LIMIT = 120;
-        double CALC_FPS_LIMIT = 1000000000D / ((double) FPS_LIMIT);
-
-        long lastTimer = System.currentTimeMillis();
+        double drawInterval = 1000000000d / FPS_LIMIT;
         double delta = 0;
+        double lastTime = System.nanoTime();
+        double currentTime;
+        long timer = 0;
+        int frameCount = 0;
 
-        while (true) {
-            long now = System.nanoTime();
-            delta += (now - lastTime) / CALC_FPS_LIMIT;
-            lastTime = now;
+        while (gameThread != null) {
+            currentTime = System.nanoTime();
 
-            boolean shouldRender = false;
+            delta += (currentTime - lastTime) / drawInterval;
+            timer += (currentTime - lastTime);
+            lastTime = currentTime;
 
-            while (delta >= 1) {
-                update();
-                delta -= 1;
-                shouldRender = true;
+            if (delta > 0) {
+                gp.update();
+                gp.repaint();
+                delta--;
+                frameCount++;
             }
 
-            if (shouldRender) {
-                FPS++;
-                gamePanel.repaint();
-            }
-
-
-            if (System.currentTimeMillis() - lastTimer >= 1000) {
-                lastTimer += 1000;
-                SHOWN_FPS = FPS;
-                FPS = 0;
+            if (timer >= 1000000000) {
+                SHOWN_FPS = frameCount;
+                frameCount = 0;
+                timer = 0;
+                System.out.println(".");
             }
         }
-    }
-
-    private void update() {
-        gsm.update();
-    }
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                Game game = new Game(); // Create and show the game UI
-                // Start the game loop in a separate thread
-                new Thread(game).start();
-            }
-        });
     }
 }
