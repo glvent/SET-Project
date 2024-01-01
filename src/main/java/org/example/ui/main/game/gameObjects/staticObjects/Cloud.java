@@ -1,19 +1,30 @@
-package org.example.ui.main.gameObjects.objects;
+package org.example.ui.main.game.gameObjects;
 
 import org.example.ui.main.GamePanel;
 
 import java.awt.*;
 
 public class Cloud extends GameObject {
+    ObjectType props;
+
     public Cloud(int x, int y, GamePanel gp) {
         super(x, y, gp);
-        props = getRandomCloud();
-
-        this.bounds = new Rectangle(x, y, props.getImage().getWidth(null),
-                props.getImage().getHeight(null));
+        props = getRandomResource();
+        bounds.setSize(props.getImage().getWidth(null), props.getImage().getHeight(null));
     }
 
-    public ObjectType getRandomCloud() {
+    @Override
+    public void render(Graphics2D g2) {
+        g2.drawImage(props.getImage(), bounds.x, bounds.y, null);
+    }
+
+    @Override
+    public void update() {
+
+    }
+
+    @Override
+    public ObjectType getRandomResource() {
         ObjectType[] clouds = new ObjectType[]{
                 ObjectType.CLOUD1,
                 ObjectType.CLOUD2,
@@ -26,4 +37,5 @@ public class Cloud extends GameObject {
 
         return clouds[(int) (Math.random() * clouds.length)];
     }
+
 }

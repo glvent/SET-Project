@@ -1,9 +1,8 @@
-package org.example.ui.main.gameObjects.resources;
+package org.example.ui.main.game.resources;
 
 public enum ResourceType {
     AETHER("Aether"),
     COGS("Cogs"),
-    RAW_COPPER("Raw Copper"),
     COPPER("Copper"),
     STEAM("Steam");
 
@@ -11,5 +10,9 @@ public enum ResourceType {
 
     ResourceType(String name) {
         this.name = name;
+    }
+
+    public String getName() {
+        return name;
     }
 }

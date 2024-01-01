@@ -1,19 +1,21 @@
-package org.example.ui.main.gameObjects.objects;
+package org.example.ui.main.game.gameObjects;
 
 import org.example.ui.main.GamePanel;
 
-import java.awt.*;
-
-public class CopperVein extends GameObject {
+public class CopperVein extends ResourceNode {
     public CopperVein(int x, int y, GamePanel gp) {
         super(x, y, gp);
-        props = getRandomCopperVein();
-
-        this.bounds = new Rectangle(x, y, props.getImage().getWidth(null),
-                props.getImage().getHeight(null));
+        props = getRandomResource();
+        bounds.setSize(props.getImage().getWidth(null), props.getImage().getHeight(null));
     }
 
-    public ObjectType getRandomCopperVein() {
+    @Override
+    public void update() {
+
+    }
+
+    @Override
+    public ObjectType getRandomResource() {
         ObjectType[] copperVeins = new ObjectType[]{
                 ObjectType.COPPER_VEIN1,
                 ObjectType.COPPER_VEIN2,
@@ -23,5 +25,4 @@ public class CopperVein extends GameObject {
 
         return copperVeins[(int) (Math.random() * copperVeins.length)];
     }
-
 }
