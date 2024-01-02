@@ -1,21 +1,27 @@
-package org.example.ui.main.gameObjects.gameInterface;
+package org.example.ui.main.game.gameInterface;
 
 import org.example.ui.main.GamePanel;
-import org.example.ui.main.gameObjects.buildings.BuildingType;
-import org.example.ui.main.map.Tile;
-import org.example.ui.main.map.TileType;
+import org.example.ui.main.game.gameObjects.GameObject;
+import org.example.ui.main.game.gameObjects.interactableObjects.buildings.*;
+import org.example.ui.main.game.gameObjects.interactableObjects.resources.ResourceType;
+import org.example.ui.main.map.GameMap;
 
 import java.awt.*;
 import java.awt.event.KeyEvent;
+import java.util.ArrayList;
+import java.util.Map;
 
 public class Builder {
     private GamePanel gp;
     private final Rectangle bounds;
-    private boolean isOpen = false;
+    private boolean isModalOpen = false;
     private boolean inBuildMode = false;
     private BuildingType selectedBuilding;
+    private int scrollOffset = 0;
+    private Rectangle scrollbarHandle;
+    private boolean canPlaceBuilding = true;
 
-    // make a new GUI class and instantiate/render all buttons & or dialogue in there
+    // make a new GUI class and instantiate/render all buttons & or dialogue in there?
 
     public Builder(GamePanel gp) {
         this.gp = gp;
@@ -26,14 +32,15 @@ public class Builder {
         final int x = GamePanel.SCREEN_WIDTH - BUTTON_SIZE - X_MARGIN;
         final int y = GamePanel.SCREEN_HEIGHT - BUTTON_SIZE - Y_MARGIN;
 
-        this.bounds = new Rectangle(x, y, BUTTON_SIZE, BUTTON_SIZE);
+        bounds = new Rectangle(x, y, BUTTON_SIZE, BUTTON_SIZE);
     }
 
     public void render(Graphics2D g2) {
-        if (gp.mouseH.currentMousePosition != null && bounds.contains(gp.mouseH.currentMousePosition)) {
-            g2.setColor(new Color(40, 40, 40, 50));
+        Color buttonColor = new Color(20, 20, 20, 50);
+        if (gp.mouseH.guiRelativeMousePostion != null && bounds.contains(gp.mouseH.guiRelativeMousePostion)) {
+            g2.setColor(buttonColor.brighter().brighter());
         } else {
-            g2.setColor(new Color(20, 20, 20, 50));
+            g2.setColor(buttonColor);
         }
 
         g2.fillRoundRect(bounds.x, bounds.y, bounds.width, bounds.height, 10, 10);
@@ -47,12 +54,13 @@ public class Builder {
         g2.drawString(buttonText, textX, textY);
 
         if (gp.mouseH.guiRelativeClick != null && bounds.contains(gp.mouseH.guiRelativeClick)) {
-            isOpen = !isOpen;
+            isModalOpen = !isModalOpen;
+            deselectBuilding();
             gp.mouseH.guiRelativeClick.setLocation(-1, -1);
         }
 
-        if (isOpen) {
-            renderMenu(g2);
+        if (isModalOpen) {
+            renderModal(g2);
         }
 
         if (inBuildMode) {
@@ -62,89 +70,262 @@ public class Builder {
         if (gp.keyH.getCurrentKeyEvent() == KeyEvent.VK_ESCAPE) {
             deselectBuilding();
         }
+
+        build();
     }
 
-    private void renderMenu(Graphics2D g2) {
-        final int MENU_WIDTH = 200;
-        final int MENU_HEIGHT = 300;
-        final int MENU_ITEM_HEIGHT = 50;
-        int menuX = bounds.x - MENU_WIDTH;
-        int menuY = bounds.y - MENU_HEIGHT + bounds.height;
+    private void build() {
+        if (selectedBuilding != null && gp.keyH.getCurrentKeyEvent() == KeyEvent.VK_ENTER && canPlaceBuilding) {
+            int x = (getTilePositionFromMouse().x - 1) * GameMap.TILE_SIZE;
+            int y = (getTilePositionFromMouse().y - 1) * GameMap.TILE_SIZE;
+
+            Building buildingToAdd = getBuildingToAdd(x, y);
+
+            if (buildingToAdd != null) {
+
+                boolean ableToBuild = true;
+
+                // removes resource cost from inventory
+                for (Map.Entry<ResourceType, Integer> cost : buildingToAdd.getProps().getCost().entrySet()) {
+                    if (cost.getValue() > gp.resourceInventory.getResourceAmt(cost.getKey())) {
+                        ableToBuild = false;
+                        break;
+                    }
+
+                    TownHall townHall = gp.gameMap.getTypeOfGameObjects(TownHall.class).get(0);
+                    ArrayList<Building> numTypeBuildings = (ArrayList<Building>) gp.gameMap.getTypeOfGameObjects(buildingToAdd.getClass());
+
+                    if (numTypeBuildings.size() + 1 > townHall.getNumOfBuildingsByLevel(buildingToAdd.getProps())) {
+                        ableToBuild = false;
+                        break;
+                    }
+                }
+
+                if (ableToBuild) {
+                    for (Map.Entry<ResourceType, Integer> cost : buildingToAdd.getProps().getCost().entrySet()) {
+                        gp.resourceInventory.consumeResource(cost.getKey(), cost.getValue());
+                    }
+                    gp.gameMap.addGameObject(buildingToAdd);
+                }
+            }
+
+            deselectBuilding();
+        }
+    }
+
+    private Building getBuildingToAdd(int x, int y) {
+        Building buildingToAdd = null;
+
+        switch (selectedBuilding.getName()) {
+            case "Town Hall" -> buildingToAdd = new TownHall(x, y, gp);
+            case "Barracks" -> buildingToAdd = new Barracks(x, y, gp);
+            case "Steam Generator" -> buildingToAdd = new SteamGenerator(x, y, gp);
+            case "Steam Lab" -> buildingToAdd = new SteamLab(x, y, gp);
+            case "Copper Mine" -> buildingToAdd = new CopperMine(x, y, gp);
+            case "Storage Hall" -> buildingToAdd = new StorageHall(x, y, gp);
+        }
+        return buildingToAdd;
+    }
+
+    // move to building class?
+    private Class<? extends Building> propsToClass(BuildingType props) {
+        switch (props) {
+            case TOWN_HALL -> {
+                return TownHall.class;
+            }
+            case COPPER_MINE -> {
+                return CopperMine.class;
+            }
+            case BARRACKS -> {
+                return Barracks.class;
+            }
+            case STEAM_GENERATOR -> {
+                return SteamGenerator.class;
+            }
+            case STORAGE_HALL -> {
+                return StorageHall.class;
+            }
+            case STEAM_LAB -> {
+                return SteamLab.class;
+            }
+            default -> {
+                return null;
+            }
+        }
+    }
+
+    private void renderModal(Graphics2D g2) {
+        final int SCROLLBAR_HEIGHT = 15;
+        final int MODAL_WIDTH = 600;
+        final int MODAL_HEIGHT = 250;
+        final int MODAL_ITEM_WIDTH = 200;
+        final int TOTAL_MODAL_WIDTH = (BuildingType.values().length - 1) * MODAL_ITEM_WIDTH;
+        final boolean NEEDS_SCROLL = TOTAL_MODAL_WIDTH > MODAL_WIDTH;
+
+        int MODAL_X = (gp.SCREEN_WIDTH - MODAL_WIDTH) / 2;
+        int MODAL_Y = (gp.SCREEN_HEIGHT - MODAL_HEIGHT) / 2;
+
+        int SCROLL_BAR_Y = MODAL_Y + MODAL_HEIGHT;
+        int SCROLLBAR_WIDTH = MODAL_WIDTH;
+        g2.setColor(Color.GRAY);
+        g2.fillRoundRect(MODAL_X, SCROLL_BAR_Y, SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT, 20, 20);
+
+        int HANDLE_WIDTH = (int) ((float) MODAL_WIDTH / TOTAL_MODAL_WIDTH * SCROLLBAR_WIDTH);
+        int HANDLE_X = MODAL_X + (int) ((float) scrollOffset / TOTAL_MODAL_WIDTH * SCROLLBAR_WIDTH);
+        scrollbarHandle = new Rectangle(HANDLE_X, SCROLL_BAR_Y, HANDLE_WIDTH, SCROLLBAR_HEIGHT);
+
+        g2.setColor(Color.DARK_GRAY);
+        g2.fillRoundRect(scrollbarHandle.x, scrollbarHandle.y, scrollbarHandle.width, scrollbarHandle.height, 20, 20);
 
         g2.setColor(new Color(50, 50, 50, 180));
-        g2.fillRoundRect(menuX, menuY, MENU_WIDTH, MENU_HEIGHT, 10, 10);
+        g2.fillRoundRect(MODAL_X, MODAL_Y, MODAL_WIDTH, MODAL_HEIGHT, 10, 10);
+
+        g2.setClip(MODAL_X, MODAL_Y, MODAL_WIDTH, MODAL_HEIGHT);
+
+        TownHall townHall = gp.gameMap.getTownHall();
 
         for (BuildingType building : BuildingType.values()) {
-            int itemY = menuY + building.ordinal() * MENU_ITEM_HEIGHT;
-            Rectangle itemBounds = new Rectangle(menuX, itemY, MENU_WIDTH, MENU_ITEM_HEIGHT);
-            g2.setColor(Color.WHITE);
-            g2.drawString(building.name(), menuX + 10, itemY + 20);
-            g2.drawRoundRect(itemBounds.x, itemBounds.y, itemBounds.width, itemBounds.height, 10, 10);
+            if (building != BuildingType.TOWN_HALL) {
+                // refactor to make either class or enum the norm but not both?
+                int currentBuildingCount = gp.gameMap.getTypeOfGameObjects(propsToClass(building)).size();
+                int maxBuildingCount = townHall.getNumOfBuildingsByLevel(building);
+
+                int itemX = MODAL_X + building.ordinal() * MODAL_ITEM_WIDTH - scrollOffset;
+                Rectangle itemBounds = new Rectangle(itemX, MODAL_Y, MODAL_ITEM_WIDTH, MODAL_HEIGHT);
+
+                // draw name
+                g2.setColor(Color.WHITE);
+                String buildingName = building.getName();
+                g2.drawString(buildingName, itemX + 10, MODAL_Y + 20);
+                g2.drawRoundRect(itemBounds.x, itemBounds.y, itemBounds.width, itemBounds.height, 10, 10);
+
+                // draw count
+                if (currentBuildingCount == maxBuildingCount) g2.setColor(Color.RED);
+                String countText = currentBuildingCount + "/" + maxBuildingCount;
+                int countTextX = itemBounds.x + itemBounds.width - 35;
+                int countTextY = itemBounds.y + itemBounds.height - 10;
+                g2.drawString(countText, countTextX, countTextY);
+
+                // draw costs
+                int costTextY = itemBounds.y + itemBounds.height - 10;
+                int costTextX = itemBounds.x + 10;
+                FontMetrics fm = g2.getFontMetrics();
+                int lineHeight = fm.getHeight();
+                g2.setFont(gp.gameFont16f);
+
+                for (Map.Entry<ResourceType, Integer> cost : building.getCost().entrySet()) {
+                    g2.drawString(cost.getKey() + ": " + cost.getValue(), costTextX, costTextY);
+                    costTextY -= lineHeight;
+                }
 
                 if (gp.mouseH.guiRelativeClick != null && itemBounds.contains(gp.mouseH.guiRelativeClick)) {
                     selectBuilding(building);
                     gp.mouseH.guiRelativeClick.setLocation(-1, -1);
                 }
+            }
+            g2.setFont(gp.gameFont24f);
         }
+
+        g2.setClip(null);
+
+        if (NEEDS_SCROLL) {
+            scrollOffset += gp.mouseH.wheelRotation * 35;
+            scrollOffset = Math.max(0, Math.min(scrollOffset, TOTAL_MODAL_WIDTH - MODAL_WIDTH));
+            gp.mouseH.wheelRotation = 0;
+        }
+
     }
 
     private void selectBuilding(BuildingType buildingType) {
         inBuildMode = true;
         selectedBuilding = buildingType;
+        isModalOpen = false;
     }
 
     private void deselectBuilding() {
         inBuildMode = false;
         selectedBuilding = null;
+        scrollOffset = 0;
     }
 
     public void renderBuildGrid(Graphics2D g2) {
-        if (gp.mouseH.currentMousePosition == null && selectedBuilding != null) return;
+        if (gp.mouseH.guiRelativeMousePostion == null || selectedBuilding == null) return;
 
-        final int RADIUS = 3;
-        final float MAX_ALPHA = 0.25f;
+        int buildingWidth = selectedBuilding.getDimensions().width;
+        int buildingHeight = selectedBuilding.getDimensions().height;
 
-        int mouseX = gp.mouseH.currentMousePosition.x + gp.camera.x;
-        int mouseY = gp.mouseH.currentMousePosition.y + gp.camera.y;
+        int centerTileX = getTilePositionFromMouse().x;
+        int centerTileY = getTilePositionFromMouse().y;
 
-        int centerTileX = mouseX / gp.gameMap.getTileWidth();
-        int centerTileY = mouseY / gp.gameMap.getTileHeight();
+        int buildingStartX = centerTileX - buildingWidth / 2;
+        int buildingStartY = centerTileY - buildingHeight / 2;
 
-        // top-left of building blueprint
-        int buildingStartX = centerTileX - selectedBuilding.getWidth() / 2;
-        int buildingStartY = centerTileY - selectedBuilding.getHeight() / 2;
+        int gridCenterX = (buildingStartX + buildingWidth / 2) * GameMap.TILE_SIZE - gp.camera.x;
+        int gridCenterY = (buildingStartY + buildingHeight / 2) * GameMap.TILE_SIZE - gp.camera.y;
 
-        for (int x = centerTileX - RADIUS; x <= centerTileX + RADIUS; x++) {
-            for (int y = centerTileY - RADIUS; y <= centerTileY + RADIUS; y++) {
-                double distance = Math.sqrt(Math.pow(x - centerTileX, 2) + Math.pow(y - centerTileY, 2));
-                if (distance <= RADIUS && gp.gameMap.getTile(x, y).getProps().isBuildable()) {
-                    int rectX = x * gp.gameMap.getTileWidth() - gp.camera.x;
-                    int rectY = y * gp.gameMap.getTileHeight() - gp.camera.y;
+        canPlaceBuilding = true;
 
-                    // decreases transparency over distance
-                    float alpha = MAX_ALPHA * (1.0f - (float) distance / RADIUS);
-                    g2.setColor(new Color(255, 255, 255, (int) (alpha * 255)));
+        String buildingName = selectedBuilding.getName();
+        FontMetrics fm = g2.getFontMetrics();
+        int textWidth = fm.stringWidth(buildingName);
+        int textX = gridCenterX - textWidth / 2;
+        int textY = gridCenterY - (buildingHeight * GameMap.TILE_SIZE) + 25;
 
-                    g2.drawRect(rectX, rectY, gp.gameMap.getTileWidth(), gp.gameMap.getTileHeight());
+        g2.setFont(gp.gameFont16f);
+        g2.drawString(buildingName, textX, textY);
+        g2.setFont(gp.gameFont24f);
+        for (int bx = 0; bx < buildingWidth; bx++) {
+            for (int by = 0; by < buildingHeight; by++) {
+                int tileX = buildingStartX + bx;
+                int tileY = buildingStartY + by;
+
+                boolean currentTileBuildable = true;
+
+                if (!isWithinMapBounds(tileX, tileY) || !gp.gameMap.getTile(tileX, tileY).getProps().isBuildable()) {
+                    currentTileBuildable = false;
+                    canPlaceBuilding = false;
                 }
+
+                Rectangle buildArea = new Rectangle(tileX * GameMap.TILE_SIZE, tileY * GameMap.TILE_SIZE, GameMap.TILE_SIZE, GameMap.TILE_SIZE);
+                for (GameObject gameObject : gp.gameMap.getGameObjects()) {
+                    if (buildArea.intersects(gameObject.getBounds())) {
+                        currentTileBuildable = false;
+                        canPlaceBuilding = false;
+                    }
+                }
+
+                int rectX = (buildingStartX + bx) * GameMap.TILE_SIZE - gp.camera.x;
+                int rectY = (buildingStartY + by) * GameMap.TILE_SIZE - gp.camera.y;
+
+                g2.setColor(currentTileBuildable ? new Color(0, 255, 0, 50) : new Color(255, 0, 0, 50));
+                g2.fillRect(rectX, rectY, gp.gameMap.TILE_SIZE, gp.gameMap.TILE_SIZE);
+                g2.drawRect(rectX, rectY, gp.gameMap.TILE_SIZE, gp.gameMap.TILE_SIZE);
             }
         }
 
-        for (int bx = 0; bx < selectedBuilding.getWidth(); bx++) {
-            for (int by = 0; by < selectedBuilding.getHeight(); by++) {
-                int rectX = (buildingStartX + bx) * gp.gameMap.getTileWidth() - gp.camera.x;
-                int rectY = (buildingStartY + by) * gp.gameMap.getTileHeight() - gp.camera.y;
-                if (gp.gameMap.getTile(bx + buildingStartX, by + buildingStartY).getProps().isBuildable()) {
-                    g2.setColor(new Color(0, 255, 0, 50));
-                    g2.fillRect(rectX, rectY, gp.gameMap.getTileWidth(), gp.gameMap.getTileHeight());
-                } else {
-                    g2.setColor(new Color(255, 0, 0, 50));
-                    g2.fillRect(rectX, rectY, gp.gameMap.getTileWidth(), gp.gameMap.getTileHeight());
-                }
-            }
-        }
         g2.setColor(Color.WHITE);
-        g2.drawString("ESC", gp.mouseH.currentMousePosition.x + 15, gp.mouseH.currentMousePosition.y + 25);
-        g2.drawString("ENTER", gp.mouseH.currentMousePosition.x - 50, gp.mouseH.currentMousePosition.y + 25);
+        if (canPlaceBuilding) {
+            g2.drawString("ENTER", gp.mouseH.guiRelativeMousePostion.x - 50, gp.mouseH.guiRelativeMousePostion.y + 25);
+        }
+        g2.drawString("ESC", gp.mouseH.guiRelativeMousePostion.x + 15, gp.mouseH.guiRelativeMousePostion.y + 25);
+    }
+
+
+    private boolean isWithinMapBounds(int x, int y) {
+        return x >= 0 && x < gp.gameMap.MAP_WIDTH && y >= 0 && y < gp.gameMap.MAP_HEIGHT;
+    }
+
+    private Point getTilePositionFromMouse() {
+        int mouseX = gp.mouseH.guiRelativeMousePostion.x + gp.camera.x;
+        int mouseY = gp.mouseH.guiRelativeMousePostion.y + gp.camera.y;
+
+        int tileX = mouseX / gp.gameMap.TILE_SIZE;
+        int tileY = mouseY / gp.gameMap.TILE_SIZE;
+
+        return new Point(tileX, tileY);
+    }
+
+    public Rectangle getBounds() {
+        return bounds;
     }
 }

@@ -1,12 +1,15 @@
-package org.example.ui.main.game.gameObjects.buildings;
+package org.example.ui.main.game.gameObjects.interactableObjects.buildings;
 
 import org.example.ui.main.GamePanel;
 import org.example.ui.main.game.gameObjects.GameObject;
+import org.example.ui.utils.Util;
 
 import java.awt.*;
+import java.util.ArrayList;
 
 public abstract class Building extends GameObject {
     protected int level = 1;
+    protected String discription;
     protected BuildingType props;
     protected boolean isModalOpen = false;
     protected static int LEVEL_CAP;
@@ -39,6 +42,9 @@ public abstract class Building extends GameObject {
 
         if (isModalOpen) {
             renderModal(g2);
+            renderBuildingModalAdditions(g2);
+        } else {
+            renderBuildingGameAdditions(g2);
         }
     }
 
@@ -71,6 +77,24 @@ public abstract class Building extends GameObject {
             isModalOpen = false;
         }
 
+        g2.setFont(gp.gameFont36f);
+        String title = props.getName();
+        FontMetrics fmTitle = g2.getFontMetrics();
+        int titleHeight = fmTitle.getHeight();
+        int titleTextX = MODAL_X + 25;
+        int titleTextY = MODAL_Y + titleHeight + 10;
+        g2.drawString(title, titleTextX, titleTextY);
+
+        g2.setFont(gp.gameFont24f);
+        FontMetrics fmDesc = g2.getFontMetrics();
+        int descLineHeight = fmDesc.getHeight();
+        int descTextY = titleTextY + titleHeight;
+        ArrayList<String> lines = Util.wrapText(discription, fmDesc, MODAL_WIDTH - 50);
+
+        for (String line : lines) {
+            g2.drawString(line, titleTextX, descTextY);
+            descTextY += descLineHeight;
+        }
     }
 
     public void renderUpgradeButton(Graphics2D g2) {
@@ -93,14 +117,17 @@ public abstract class Building extends GameObject {
         g2.setColor(Color.WHITE);
 
         String buttonText = "Upgrade";
+        g2.setFont(gp.gameFont16f);
         FontMetrics fm = g2.getFontMetrics();
         int textWidth = fm.stringWidth(buttonText);
-        int textHeight = fm.getAscent();
+        int textAscent = fm.getAscent();
+        int textDescent = fm.getDescent();
 
         int textX = buttonX + (BUTTON_WIDTH - textWidth) / 2;
-        int textY = buttonY + (BUTTON_HEIGHT + textHeight) / 2;
+        int textY = buttonY + (BUTTON_HEIGHT - (textAscent + textDescent)) / 2 + textAscent;
 
-        g2.setFont(gp.gameFont16f);
+        g2.drawString(buttonText, textX, textY);
+
         g2.drawString(buttonText, textX, textY);
         g2.setFont(gp.gameFont24f);
 
@@ -113,12 +140,17 @@ public abstract class Building extends GameObject {
 
     public void upgrade() {
         if (level < LEVEL_CAP) {
+            // handle resource consumption, new building look, and increased caps, production etc...
             level++;
             onUpgrade();
         }
     };
 
     protected abstract void onUpgrade();
+
+    protected abstract void renderBuildingGameAdditions(Graphics2D g2);
+
+    protected abstract void renderBuildingModalAdditions(Graphics2D g2);
 
     public boolean getIsModalOpen() {
         return isModalOpen;

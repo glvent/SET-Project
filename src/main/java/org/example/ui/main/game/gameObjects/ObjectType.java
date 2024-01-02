@@ -1,12 +1,10 @@
-package org.example.ui.main.gameObjects.objects;
+package org.example.ui.main.game.gameObjects;
 
-import org.example.ui.main.map.TileType;
+import org.example.ui.main.game.gameObjects.interactableObjects.resources.AetherCrystal;
+import org.example.ui.main.game.gameObjects.interactableObjects.resources.CopperVein;
+import org.example.ui.main.game.gameObjects.staticObjects.Cloud;
 
-import javax.imageio.ImageIO;
 import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.io.InputStream;
 
 import static org.example.ui.utils.Util.readImage;
 
@@ -25,7 +23,13 @@ public enum ObjectType {
     AETHER_CRYSTAL1("Aether Crystal 1", true, true, readImage("/aetherCrystal1.png")),
     AETHER_CRYSTAL2("Aether Crystal 2", true, true, readImage("/aetherCrystal2.png")),
     AETHER_CRYSTAL3("Aether Crystal 3", true, true, readImage("/aetherCrystal3.png")),
-    AETHER_CRYSTAL4("Aether Crystal 4", true, true, readImage("/aetherCrystal4.png"));
+    AETHER_CRYSTAL4("Aether Crystal 4", true, true, readImage("/aetherCrystal4.png")),
+    MUSHROOM("Mushroom", false, false, readImage("/mushroom.png")),
+    ROCK("Rocks", false, false, readImage("/rock.png")),
+    TREE("Tree", true, false, readImage("/tree.png")),
+    LOG("Log",true, false, readImage("/log.png"));
+
+    // refactor... current method of keeping all game objects in one enum is proving inefficient.
 
 
     private final String name;

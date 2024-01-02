@@ -1,4 +1,4 @@
-package org.example.ui.main.gameObjects.entities;
+package org.example.ui.main.game.entities;
 
 import org.example.ui.main.GamePanel;
 import org.example.ui.utils.Vector;

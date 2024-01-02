@@ -1,4 +1,4 @@
-package org.example.ui.main.game.resources;
+package org.example.ui.main.game.gameObjects.interactableObjects.resources;
 
 import org.example.ui.main.GamePanel;
 import org.example.ui.utils.Util;
@@ -47,7 +47,7 @@ public class ResourceInventory {
         final int BAR_HEIGHT = 20;
         final int MARGIN = 20;
 
-        g2.setFont(Util.loadFont("/gameFont.ttf", 16));
+        g2.setFont(Util.readFont("/gameFont.ttf", 16));
         FontMetrics fm = g2.getFontMetrics();
 
         int x = gp.getWidth() - BAR_WIDTH - MARGIN;
@@ -82,7 +82,6 @@ public class ResourceInventory {
             case COGS -> Color.RED;
             case AETHER -> Color.MAGENTA;
             case STEAM -> Color.BLUE;
-            default -> Color.WHITE;
         };
     }
 

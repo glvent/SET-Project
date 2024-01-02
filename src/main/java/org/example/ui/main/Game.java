@@ -1,24 +1,47 @@
 package org.example.ui.main;
 
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+
 public class Game implements Runnable {
     public GameFrame gf;
     public GamePanel gp;
     Thread gameThread;
     int SHOWN_FPS = 0; // for logging
+    long startTime;
+    long closeTime;
 
     public Game() {
         gp = new GamePanel(this);
         gf = new GameFrame(this);
+        setupExitListener();
+    }
+
+    private void setupExitListener() {
+        gf.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                closeGame();
+            }
+        });
     }
 
     public static void main(String[] args) {
         Game game = new Game();
-        game.startGameThread();
+        game.startGame();
     }
 
-    public void startGameThread() {
+    public void startGame() {
         gameThread = new Thread(this);
         gameThread.start();
+        startTime = System.currentTimeMillis();
+    }
+
+    public void closeGame() {
+        System.out.println("Game closing...");
+        closeTime = System.currentTimeMillis();
+        gameThread = null;
+        System.exit(0);
     }
 
     @Override

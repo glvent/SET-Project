@@ -1,4 +1,4 @@
-package org.example.ui.main.game.resources;
+package org.example.ui.main.game.gameObjects.interactableObjects.resources;
 
 public enum ResourceType {
     AETHER("Aether"),

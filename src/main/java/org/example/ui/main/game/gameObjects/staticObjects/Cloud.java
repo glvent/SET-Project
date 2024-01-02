@@ -1,6 +1,8 @@
-package org.example.ui.main.game.gameObjects;
+package org.example.ui.main.game.gameObjects.staticObjects;
 
 import org.example.ui.main.GamePanel;
+import org.example.ui.main.game.gameObjects.GameObject;
+import org.example.ui.main.game.gameObjects.ObjectType;
 
 import java.awt.*;
 
@@ -18,12 +20,6 @@ public class Cloud extends GameObject {
         g2.drawImage(props.getImage(), bounds.x, bounds.y, null);
     }
 
-    @Override
-    public void update() {
-
-    }
-
-    @Override
     public ObjectType getRandomResource() {
         ObjectType[] clouds = new ObjectType[]{
                 ObjectType.CLOUD1,

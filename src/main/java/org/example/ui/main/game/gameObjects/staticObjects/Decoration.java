@@ -1,6 +1,8 @@
-package org.example.ui.main.game.gameObjects;
+package org.example.ui.main.game.gameObjects.staticObjects;
 
 import org.example.ui.main.GamePanel;
+import org.example.ui.main.game.gameObjects.GameObject;
+import org.example.ui.main.game.gameObjects.ObjectType;
 
 import java.awt.*;
 
@@ -19,12 +21,6 @@ public class Decoration extends GameObject {
 
     }
 
-    @Override
-    public void update() {
-
-    }
-
-    @Override
     public ObjectType getRandomResource() {
         ObjectType[] decorations = new ObjectType[]{
                 ObjectType.MUSHROOM,

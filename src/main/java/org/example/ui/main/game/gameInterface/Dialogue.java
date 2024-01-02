@@ -1,19 +1,30 @@
-package org.example.ui.main.gameObjects.gameInterface;
+package org.example.ui.main.game.gameInterface;
 
 import org.example.ui.input.KeyHandler;
 import org.example.ui.main.GamePanel;
+import org.example.ui.utils.Util;
 
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 
 public class Dialogue {
-    private ArrayList<String> parts;
-    private int currentPartIndex;
+    private static class Step {
+        String text;
+        Polygon direction;
+
+        Step(String text, Polygon direction) {
+            this.text = text;
+            this.direction = direction;
+        }
+    }
+
+    private ArrayList<Step> steps;
+    private int currentStepIndex;
     private int charIndex;
-    private String currentText;
     private long lastCharTime;
-    private static final long CHAR_TYPE_DELAY = 75;
+    private static final int CHAR_TYPE_DELAY = 75;
+    private static final int ARROW_SIZE = 20;
     private boolean isVisible;
     private GamePanel gp;
     private KeyHandler keyH;
@@ -21,52 +32,45 @@ public class Dialogue {
     public Dialogue(KeyHandler keyH, GamePanel gp) {
         this.gp = gp;
         this.keyH = keyH;
-        this.parts = new ArrayList<>();
+        this.steps = new ArrayList<>();
         this.isVisible = false;
-        this.currentPartIndex = 0;
+        this.currentStepIndex = 0;
         this.charIndex = 0;
         this.lastCharTime = System.currentTimeMillis();
     }
 
-    public void addPart(String text) {
-        parts.add(text);
+    public void addStep(String text, Polygon direction) {
+        steps.add(new Step(text, direction));
     }
 
-    public void nextPart() {
+    public void nextStep() {
         if (!isVisible) return;
 
-        if (currentPartIndex < parts.size() - 1) {
-            currentPartIndex++;
-            currentText = parts.get(currentPartIndex);
+        if (currentStepIndex < steps.size() - 1) {
+            currentStepIndex++;
             charIndex = 0;
         } else {
-            reset(); // hide and clear after last part
+            reset(); // hide and clear after last step
         }
     }
 
     public void show() {
-        if (!parts.isEmpty()) {
-            currentText = parts.get(currentPartIndex);
+        if (!steps.isEmpty()) {
             isVisible = true;
         }
     }
 
-    public void hide() {
-        isVisible = false;
-    }
-
     public void reset() {
-        currentText = null;
-        currentPartIndex = 0;
+        currentStepIndex = 0;
         charIndex = 0;
-        parts.clear();
+        steps.clear();
         isVisible = false;
     }
 
     public void update() {
-        if (!isVisible || charIndex >= currentText.length()) {
+        if (!isVisible || charIndex >= steps.get(currentStepIndex).text.length()) {
             if (keyH.getCurrentKeyEvent() == KeyEvent.VK_SPACE) {
-                nextPart();
+                nextStep();
             }
             return;
         }
@@ -81,6 +85,8 @@ public class Dialogue {
     public void render(Graphics2D g2) {
         if (!isVisible) return;
 
+        Step currentStep = steps.get(currentStepIndex);
+
         int x = 100;
         int y = gp.getHeight() - 100;
         int width = 600;
@@ -90,13 +96,59 @@ public class Dialogue {
         g2.fillRoundRect(x, y, width, height, 10, 10);
 
         g2.setColor(Color.WHITE);
-        g2.drawString(currentText.substring(0, charIndex), x + 25, y + 25);
+        FontMetrics fm = g2.getFontMetrics();
+        ArrayList<String> lines = Util.wrapText(currentStep.text.substring(0, charIndex), fm, width - 50);
+
+        int lineHeight = fm.getHeight();
+        int textY = y + 25;
+        for (String line : lines) {
+            g2.drawString(line, x + 25, textY);
+            textY += lineHeight;
+        }
+
+
+        if (currentStep.direction == null) return;
+        g2.setColor(Color.ORANGE);
+        g2.fillPolygon(currentStep.direction);
     }
 
     public void initDialogue() {
-        addPart("Welcome fellow steampunker!");
-        addPart("Let me show you around...");
+        addStep("Welcome fellow steampunker!", null);
+        addStep("Let me show you around...", null);
+        addStep("This here is your shop where you will expand your steam empire.",
+                createArrow(gp.getBuilder().getBounds().x + (gp.getBuilder().getBounds().width / 2), gp.getBuilder().getBounds().y - 10, 'd'));
 
-        this.show();
+        show();
+    }
+
+    private Polygon createArrow(int x, int y, char direction) {
+        Polygon arrow = new Polygon();
+
+        switch (direction) {
+            case 'l':
+                arrow.addPoint(x, y);
+                arrow.addPoint(x + ARROW_SIZE, y - ARROW_SIZE / 2);
+                arrow.addPoint(x + ARROW_SIZE, y + ARROW_SIZE / 2);
+                break;
+            case 'r':
+                arrow.addPoint(x, y - ARROW_SIZE / 2);
+                arrow.addPoint(x, y + ARROW_SIZE / 2);
+                arrow.addPoint(x + ARROW_SIZE, y);
+                break;
+            case 'u':
+                arrow.addPoint(x - ARROW_SIZE / 2, y);
+                arrow.addPoint(x + ARROW_SIZE / 2, y);
+                arrow.addPoint(x, y - ARROW_SIZE);
+                break;
+            case 'd':
+                arrow.addPoint(x - ARROW_SIZE / 2, y - ARROW_SIZE);
+                arrow.addPoint(x + ARROW_SIZE / 2, y - ARROW_SIZE);
+                arrow.addPoint(x, y);
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid direction: " + direction);
+        }
+
+        return arrow;
     }
 }

@@ -1,9 +1,8 @@
-package org.example.ui.main.game.gameObjects.buildings;
+package org.example.ui.main.game.gameObjects.interactableObjects.buildings;
 
-import org.example.ui.main.game.resources.ResourceType;
+import org.example.ui.main.game.gameObjects.interactableObjects.resources.ResourceType;
 
 import java.awt.*;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;

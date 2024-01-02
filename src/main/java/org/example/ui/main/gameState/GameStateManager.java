@@ -1,4 +1,4 @@
-package org.example.ui.main;
+package org.example.ui.main.gameState;
 
 public class GameStateManager {
 }

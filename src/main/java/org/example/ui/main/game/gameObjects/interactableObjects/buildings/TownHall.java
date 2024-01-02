@@ -1,10 +1,11 @@
-package org.example.ui.main.game.gameObjects.buildings;
+package org.example.ui.main.game.gameObjects.interactableObjects.buildings;
 
 import org.example.ui.main.GamePanel;
 import org.example.ui.main.game.gameObjects.ObjectType;
-import org.example.ui.main.game.resources.ResourceType;
+import org.example.ui.main.game.gameObjects.interactableObjects.resources.ResourceType;
 import org.example.ui.main.map.GameMap;
 
+import java.awt.*;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -14,9 +15,15 @@ public class TownHall extends Building {
     public TownHall(int x, int y, GamePanel gp) {
         super(x, y, gp);
 
+        discription = "The heart of your settlement, the Town Hall stands " +
+                "as a symbol of progress and leadership. It coordinates the " +
+                "activities of your town and allows for further expansion " +
+                "and advancement. Upgrading the Town Hall unlocks new buildings " +
+                "and opportunities.";
+
         LEVEL_CAP = 8;
-        this.addedResourceCap = new HashMap<>();
-        this.props = BuildingType.TOWN_HALL;
+        addedResourceCap = new HashMap<>();
+        props = BuildingType.TOWN_HALL;
         bounds.setSize(props.getDimensions().width * GameMap.TILE_SIZE, props.getDimensions().height * GameMap.TILE_SIZE);
     }
 
@@ -26,13 +33,13 @@ public class TownHall extends Building {
     }
 
     @Override
-    public void update() {
+    protected void renderBuildingGameAdditions(Graphics2D g2) {
 
     }
 
     @Override
-    public ObjectType getRandomResource() {
-        return null;
+    protected void renderBuildingModalAdditions(Graphics2D g2) {
+
     }
 
     public int getNumOfBuildingsByLevel(BuildingType buildingType) {
