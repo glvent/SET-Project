@@ -1,4 +1,4 @@
-package java.org.example.ui.main;
+package org.example.ui.main;
 
 import org.example.ui.main.game.entities.Entity;
 import org.example.ui.main.game.gameInterface.Builder;
@@ -29,11 +29,11 @@ public class GamePanel extends JPanel {
     public static final int CAMERA_SPEED = 5;
 
     public GameMap gameMap;
-    public Dialogue dialogue;
-    public Rectangle viewport;
-    private ArrayList<Entity> entities;
-    public ResourceInventory resourceInventory;
-    private Builder builder;
+    public final Dialogue dialogue;
+    public final Rectangle viewport;
+    private final ArrayList<Entity> entities;
+    public final ResourceInventory resourceInventory;
+    private final Builder builder;
     public Font gameFont36f;
     public Font gameFont24f;
     public Font gameFont16f;
@@ -123,8 +123,9 @@ public class GamePanel extends JPanel {
         gameMap.update();
         dialogue.update();
 
-        ArrayList<Generator> generators = gameMap.getTypeOfGameObjects(Generator.class);
-        generators.forEach(Generator::generate);
+        ArrayList<Building> buildings = gameMap.getTypeOfGameObjects(Building.class);
+        buildings.forEach(Building::update);
+
     }
 
     private void handleCameraMovement() {

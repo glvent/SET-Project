@@ -58,7 +58,7 @@ public class Game implements Runnable {
             currentTime = System.nanoTime();
 
             delta += (currentTime - lastTime) / drawInterval;
-            timer += (currentTime - lastTime);
+            timer += (long) (currentTime - lastTime);
             lastTime = currentTime;
 
             if (delta > 0) {

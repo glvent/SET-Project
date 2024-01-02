@@ -1,16 +1,17 @@
 package org.example.ui.main.game.gameObjects.interactableObjects.buildings;
 
 import org.example.ui.main.GamePanel;
-import org.example.ui.main.game.gameObjects.ObjectType;
 import org.example.ui.main.game.gameObjects.interactableObjects.resources.ResourceType;
 import org.example.ui.main.map.GameMap;
+
+import java.util.Map;
 
 public class CopperMine extends Generator {
 
     public CopperMine(int x, int y, GamePanel gp) {
         super(x, y, gp);
 
-        discription = "Delve into the earth to extract valuable copper, a fundamental " +
+        description = "Delve into the earth to extract valuable copper, a fundamental " +
                 "resource for your town's development. The Copper Mine is essential " +
                 "for building advanced structures and crafting intricate machinery.";
 
@@ -21,8 +22,39 @@ public class CopperMine extends Generator {
     }
 
     @Override
-    protected void onUpgrade() {
+    protected Map<ResourceType, Integer> getUpgradeCost() {
+        return null;
+    }
 
+    @Override
+    protected int getUpgradeTime() {
+        switch (level) {
+            case 1 -> {
+                return 60;
+            }
+            case 2 -> {
+                return 150;
+            }
+            case 3 -> {
+                return 500;
+            }
+        }
+        return 0;
+    }
+
+    @Override
+    protected void changeStatsOnUpgrade() {
+        switch (level) {
+            case 1 -> {
+                resourcePerHour = 400;
+            }
+            case 2 -> {
+                resourcePerHour = 800;
+            }
+            case 3 -> {
+                resourcePerHour = 1200;
+            }
+        }
     }
 
     @Override

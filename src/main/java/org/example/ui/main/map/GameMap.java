@@ -230,6 +230,7 @@
         private Point findBaseLocation() {
             int maxAttempts = 1000;
             for (int attempt = 0; attempt < maxAttempts; attempt++) {
+
                 // random area to start check at
                 int x = rand.nextInt(MAP_WIDTH - 10);
                 int y = rand.nextInt(MAP_HEIGHT - 10);
@@ -239,8 +240,8 @@
                 }
             }
             gp.gameMap = new GameMap(MAP_WIDTH, MAP_HEIGHT, gp);
-            // recursively calls new GameMap until a suitable starting location is found
-            // DOESNT WORK CORRECTLY!
+
+            // supposed to call recursively until a proper map has been found... (doesn't work)
             return null;
         }
 

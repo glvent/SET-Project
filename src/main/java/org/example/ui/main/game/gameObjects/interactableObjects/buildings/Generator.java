@@ -17,7 +17,8 @@ public abstract class Generator extends Building {
         lastUpdateTime = System.currentTimeMillis();
     }
 
-    public void generate() {
+    @Override
+    public void handleBuildingSpecificUpdates() {
         System.out.println("Generating");
         long currentTime = System.currentTimeMillis();
         long timeElapsed = currentTime - lastUpdateTime; // time in ms
@@ -34,29 +35,14 @@ public abstract class Generator extends Building {
         lastUpdateTime = currentTime;
     }
 
-    public void renderProgressBar(Graphics2D g2) {
-        int x = bounds.x;
-        int y = bounds.y;
-        int width = bounds.width;
-        int height = 10;
-
-        double progress = getProgress();
-
-        g2.setColor(Color.GRAY);
-        g2.fillRect(x, y - height - 5, width, height);
-
-        g2.setColor(Color.GREEN);
-        g2.fillRect(x, y - height - 5, (int) (width * progress), height);
-    }
-
-    public double getProgress() {
+    public double getGenerationProgress() {
         double timeForOneResource = 3600000.0 / resourcePerHour;
         return Math.min(accumulatedTime / timeForOneResource, 1.0); // progress percentage
     }
 
     @Override
     protected void renderBuildingGameAdditions(Graphics2D g2) {
-        renderProgressBar(g2);
+        renderProgressBar(g2, getGenerationProgress());
     }
 
     @Override

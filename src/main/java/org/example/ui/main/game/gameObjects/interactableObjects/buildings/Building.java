@@ -2,15 +2,20 @@ package org.example.ui.main.game.gameObjects.interactableObjects.buildings;
 
 import org.example.ui.main.GamePanel;
 import org.example.ui.main.game.gameObjects.GameObject;
+import org.example.ui.main.game.gameObjects.interactableObjects.resources.ResourceType;
 import org.example.ui.utils.Util;
 
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.Map;
 
 public abstract class Building extends GameObject {
     protected int level = 1;
-    protected String discription;
+    protected String description;
     protected BuildingType props;
+    protected long lastUpgradeTime;
+    protected double accumulatedUpgradeTime;
+
     protected boolean isModalOpen = false;
     protected static int LEVEL_CAP;
     private static final int MODAL_WIDTH = 400;
@@ -23,6 +28,7 @@ public abstract class Building extends GameObject {
 
     public Building(int x, int y, GamePanel gp) {
         super(x, y, gp);
+        lastUpgradeTime = System.currentTimeMillis();
     }
 
     @Override
@@ -44,8 +50,25 @@ public abstract class Building extends GameObject {
             renderModal(g2);
             renderBuildingModalAdditions(g2);
         } else {
-            renderBuildingGameAdditions(g2);
+            if (accumulatedUpgradeTime > 0) {
+                renderProgressBar(g2, getUpgradeProgress());
+            } else {
+                renderBuildingGameAdditions(g2);
+            }
         }
+    }
+
+    public void renderProgressBar(Graphics2D g2, double progress) {
+        int x = bounds.x;
+        int y = bounds.y;
+        int width = bounds.width;
+        int height = 10;
+
+        g2.setColor(Color.GRAY);
+        g2.fillRect(x, y - height - 5, width, height);
+
+        g2.setColor(Color.GREEN);
+        g2.fillRect(x, y - height - 5, (int) (width * progress), height);
     }
 
     public void renderModal(Graphics2D g2) {
@@ -89,7 +112,7 @@ public abstract class Building extends GameObject {
         FontMetrics fmDesc = g2.getFontMetrics();
         int descLineHeight = fmDesc.getHeight();
         int descTextY = titleTextY + titleHeight;
-        ArrayList<String> lines = Util.wrapText(discription, fmDesc, MODAL_WIDTH - 50);
+        ArrayList<String> lines = Util.wrapText(description, fmDesc, MODAL_WIDTH - 50);
 
         for (String line : lines) {
             g2.drawString(line, titleTextX, descTextY);
@@ -140,17 +163,85 @@ public abstract class Building extends GameObject {
 
     public void upgrade() {
         if (level < LEVEL_CAP) {
-            // handle resource consumption, new building look, and increased caps, production etc...
-            level++;
-            onUpgrade();
+            Map<ResourceType, Integer> upgradeCost = getUpgradeCost();
+            if (canAffordUpgrade(upgradeCost)) {
+                consumeOnUpgrade(upgradeCost);
+                startUpgradeProgress();
+                changeStatsOnUpgrade();
+            }
         }
-    };
+    }
 
-    protected abstract void onUpgrade();
+    private void startUpgradeProgress() {
+        if (accumulatedUpgradeTime == 0) {
+            lastUpgradeTime = System.currentTimeMillis();
+            accumulatedUpgradeTime = 1;
+        }
+    }
 
+    private void handleUpgradeProgress() {
+        if (accumulatedUpgradeTime > 0) {
+            long currentTime = System.currentTimeMillis();
+            long timeElapsed = currentTime - lastUpgradeTime;
+
+            double elapsedSeconds = timeElapsed / 1000.0;
+            accumulatedUpgradeTime += elapsedSeconds;
+
+            // upgrade complete
+            if (accumulatedUpgradeTime >= getUpgradeTime()) {
+                accumulatedUpgradeTime = 0;
+                changeStatsOnUpgrade();
+                level++;
+            }
+
+            lastUpgradeTime = currentTime;
+        }
+    }
+
+
+    public void update() {
+        handleUpgradeProgress();
+        handleBuildingSpecificUpdates();
+    }
+
+    public double getUpgradeProgress() {
+        double totalUpgradeTime = getUpgradeTime();
+        System.out.println(totalUpgradeTime);
+        return Math.min(accumulatedUpgradeTime / totalUpgradeTime, 1.0);
+    }
+
+
+    private boolean canAffordUpgrade(Map<ResourceType, Integer> upgradeCost) {
+        for (Map.Entry<ResourceType, Integer> costEntry : upgradeCost.entrySet()) {
+            ResourceType resourceType = costEntry.getKey();
+            int requiredAmount = costEntry.getValue();
+            int currentAmount = gp.resourceInventory.getResourceAmt(resourceType);
+
+            if (currentAmount < requiredAmount) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private void consumeOnUpgrade(Map<ResourceType, Integer> upgradeCost) {
+        for (Map.Entry<ResourceType, Integer> costEntry : upgradeCost.entrySet()) {
+            ResourceType resourceType = costEntry.getKey();
+            int requiredAmount = costEntry.getValue();
+
+            gp.resourceInventory.consumeResource(resourceType, requiredAmount);
+        }
+    }
+
+    protected abstract Map<ResourceType, Integer> getUpgradeCost();
+    protected abstract int getUpgradeTime();
+    protected abstract void changeStatsOnUpgrade();
     protected abstract void renderBuildingGameAdditions(Graphics2D g2);
 
     protected abstract void renderBuildingModalAdditions(Graphics2D g2);
+
+    protected abstract void handleBuildingSpecificUpdates();
 
     public boolean getIsModalOpen() {
         return isModalOpen;
