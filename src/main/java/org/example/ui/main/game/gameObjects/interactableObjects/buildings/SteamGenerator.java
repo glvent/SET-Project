@@ -16,6 +16,7 @@ public class SteamGenerator extends Generator {
                 "energy required to power various buildings and contraptions, " +
                 "fueling the growth and innovation of your settlement.";
 
+        LEVEL_CAP = 4;
         resourcePerHour = 120;
         props = BuildingType.STEAM_GENERATOR;
         bounds.setSize(props.getDimensions().width * GameMap.TILE_SIZE, props.getDimensions().height * GameMap.TILE_SIZE);
@@ -23,6 +24,29 @@ public class SteamGenerator extends Generator {
 
     @Override
     protected Map<ResourceType, Integer> getUpgradeCost() {
+        switch (level) {
+            case 1 -> {
+                return Map.of(
+                        ResourceType.COPPER, 100,
+                        ResourceType.COGS, 100,
+                        ResourceType.STEAM, 50
+                );
+            }
+            case 2 -> {
+                return Map.of(
+                        ResourceType.COPPER, 200,
+                        ResourceType.COGS, 200,
+                        ResourceType.STEAM, 100
+                );
+            }
+            case 3 -> {
+                return Map.of(
+                        ResourceType.COPPER, 500,
+                        ResourceType.COGS, 500,
+                        ResourceType.STEAM, 250
+                );
+            }
+        }
         return null;
     }
 

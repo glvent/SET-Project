@@ -23,6 +23,29 @@ public class SteamLab extends Building {
 
     @Override
     protected Map<ResourceType, Integer> getUpgradeCost() {
+        switch (level) {
+            case 1 -> {
+                return Map.of(
+                        ResourceType.COPPER, 200,
+                        ResourceType.COGS, 200,
+                        ResourceType.STEAM, 100
+                );
+            }
+            case 2 -> {
+                return Map.of(
+                        ResourceType.COPPER, 500,
+                        ResourceType.COGS, 500,
+                        ResourceType.STEAM, 200
+                );
+            }
+            case 3 -> {
+                return Map.of(
+                        ResourceType.COPPER, 800,
+                        ResourceType.COGS, 800,
+                        ResourceType.STEAM, 400
+                );
+            }
+        }
         return null;
     }
 

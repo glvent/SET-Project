@@ -8,7 +8,6 @@ import org.example.ui.main.map.GameMap;
 
 import java.awt.*;
 import java.awt.event.KeyEvent;
-import java.util.ArrayList;
 import java.util.Map;
 
 public class Builder {
@@ -37,7 +36,7 @@ public class Builder {
 
     public void render(Graphics2D g2) {
         Color buttonColor = new Color(20, 20, 20, 50);
-        if (gp.mouseH.guiRelativeMousePostion != null && bounds.contains(gp.mouseH.guiRelativeMousePostion)) {
+        if (gp.mouseH.guiRelativeMousePosition != null && bounds.contains(gp.mouseH.guiRelativeMousePosition)) {
             g2.setColor(buttonColor.brighter().brighter());
         } else {
             g2.setColor(buttonColor);
@@ -79,50 +78,47 @@ public class Builder {
             int x = (getTilePositionFromMouse().x - 1) * GameMap.TILE_SIZE;
             int y = (getTilePositionFromMouse().y - 1) * GameMap.TILE_SIZE;
 
-            Building buildingToAdd = getBuildingToAdd(x, y);
+            Map<ResourceType, Integer> buildingCost = selectedBuilding.getCost();
 
-            if (buildingToAdd != null) {
-
-                boolean ableToBuild = true;
-
-                // removes resource cost from inventory
-                for (Map.Entry<ResourceType, Integer> cost : buildingToAdd.getProps().getCost().entrySet()) {
-                    if (cost.getValue() > gp.resourceInventory.getResourceAmt(cost.getKey())) {
-                        ableToBuild = false;
-                        break;
-                    }
-
-                    TownHall townHall = gp.gameMap.getTypeOfGameObjects(TownHall.class).get(0);
-                    ArrayList<Building> numTypeBuildings = (ArrayList<Building>) gp.gameMap.getTypeOfGameObjects(buildingToAdd.getClass());
-
-                    if (numTypeBuildings.size() + 1 > townHall.getNumOfBuildingsByLevel(buildingToAdd.getProps())) {
-                        ableToBuild = false;
-                        break;
-                    }
-                }
-
-                if (ableToBuild) {
-                    for (Map.Entry<ResourceType, Integer> cost : buildingToAdd.getProps().getCost().entrySet()) {
-                        gp.resourceInventory.consumeResource(cost.getKey(), cost.getValue());
-                    }
-                    gp.gameMap.addGameObject(buildingToAdd);
-                }
+            if (canAffordBuilding(buildingCost) && isValidBuildingLocation(x, y, selectedBuilding)) {
+                Building buildingToAdd = createBuilding(x, y, selectedBuilding);
+                deductResources(buildingCost);
+                gp.gameMap.addGameObject(buildingToAdd);
             }
 
             deselectBuilding();
         }
     }
 
-    private Building getBuildingToAdd(int x, int y) {
+    private boolean isValidBuildingLocation(int x, int y, BuildingType buildingType) {
+        return gp.gameMap.isTileBuildable(x / GameMap.TILE_SIZE, y / GameMap.TILE_SIZE) && !gp.gameMap.isTileOccupied(x / GameMap.TILE_SIZE, y / GameMap.TILE_SIZE, buildingType.getDimensions());
+    }
+
+    private boolean canAffordBuilding(Map<ResourceType, Integer> buildingCost) {
+        for (Map.Entry<ResourceType, Integer> cost : buildingCost.entrySet()) {
+            if (cost.getValue() > gp.resourceInventory.getResourceAmt(cost.getKey())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void deductResources(Map<ResourceType, Integer> buildingCost) {
+        for (Map.Entry<ResourceType, Integer> cost : buildingCost.entrySet()) {
+            gp.resourceInventory.consumeResource(cost.getKey(), cost.getValue());
+        }
+    }
+
+    private Building createBuilding(int x, int y, BuildingType type) {
         Building buildingToAdd = null;
 
-        switch (selectedBuilding.getName()) {
-            case "Town Hall" -> buildingToAdd = new TownHall(x, y, gp);
-            case "Barracks" -> buildingToAdd = new Barracks(x, y, gp);
-            case "Steam Generator" -> buildingToAdd = new SteamGenerator(x, y, gp);
-            case "Steam Lab" -> buildingToAdd = new SteamLab(x, y, gp);
-            case "Copper Mine" -> buildingToAdd = new CopperMine(x, y, gp);
-            case "Storage Hall" -> buildingToAdd = new StorageHall(x, y, gp);
+        switch (type) {
+            case TOWN_HALL -> buildingToAdd = new TownHall(x, y, gp);
+            case BARRACKS -> buildingToAdd = new Barracks(x, y, gp);
+            case STEAM_GENERATOR -> buildingToAdd = new SteamGenerator(x, y, gp);
+            case STEAM_LAB -> buildingToAdd = new SteamLab(x, y, gp);
+            case COPPER_MINE -> buildingToAdd = new CopperMine(x, y, gp);
+            case STORAGE_HALL -> buildingToAdd = new StorageHall(x, y, gp);
         }
         return buildingToAdd;
     }
@@ -249,7 +245,7 @@ public class Builder {
     }
 
     public void renderBuildGrid(Graphics2D g2) {
-        if (gp.mouseH.guiRelativeMousePostion == null || selectedBuilding == null) return;
+        if (gp.mouseH.guiRelativeMousePosition == null || selectedBuilding == null) return;
 
         int buildingWidth = selectedBuilding.getDimensions().width;
         int buildingHeight = selectedBuilding.getDimensions().height;
@@ -305,9 +301,9 @@ public class Builder {
 
         g2.setColor(Color.WHITE);
         if (canPlaceBuilding) {
-            g2.drawString("ENTER", gp.mouseH.guiRelativeMousePostion.x - 50, gp.mouseH.guiRelativeMousePostion.y + 25);
+            g2.drawString("ENTER", gp.mouseH.guiRelativeMousePosition.x - 50, gp.mouseH.guiRelativeMousePosition.y + 25);
         }
-        g2.drawString("ESC", gp.mouseH.guiRelativeMousePostion.x + 15, gp.mouseH.guiRelativeMousePostion.y + 25);
+        g2.drawString("ESC", gp.mouseH.guiRelativeMousePosition.x + 15, gp.mouseH.guiRelativeMousePosition.y + 25);
     }
 
 
@@ -316,8 +312,8 @@ public class Builder {
     }
 
     private Point getTilePositionFromMouse() {
-        int mouseX = gp.mouseH.guiRelativeMousePostion.x + gp.camera.x;
-        int mouseY = gp.mouseH.guiRelativeMousePostion.y + gp.camera.y;
+        int mouseX = gp.mouseH.guiRelativeMousePosition.x + gp.camera.x;
+        int mouseY = gp.mouseH.guiRelativeMousePosition.y + gp.camera.y;
 
         int tileX = mouseX / gp.gameMap.TILE_SIZE;
         int tileY = mouseY / gp.gameMap.TILE_SIZE;

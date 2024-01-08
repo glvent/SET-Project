@@ -11,7 +11,7 @@ public class MouseHandler implements MouseListener, MouseMotionListener, MouseWh
     public Point cameraRelativeClick;
     public Point guiRelativeClick;
     public Point cameraRelativeMousePosition;
-    public Point guiRelativeMousePostion;
+    public Point guiRelativeMousePosition;
     public Point dragStartPosition;
     public Point dragEndPosition;
     public int wheelRotation;
@@ -25,7 +25,7 @@ public class MouseHandler implements MouseListener, MouseMotionListener, MouseWh
         cameraRelativeClick = new Point();
         guiRelativeClick = new Point();
         cameraRelativeMousePosition = new Point();
-        guiRelativeMousePostion = new Point();
+        guiRelativeMousePosition = new Point();
         dragStartPosition = new Point();
         dragEndPosition = new Point();
     }
@@ -76,11 +76,16 @@ public class MouseHandler implements MouseListener, MouseMotionListener, MouseWh
         int adjustedX = e.getX() + gp.camera.x;
         int adjustedY = e.getY() + gp.camera.y;
         cameraRelativeMousePosition.setLocation(adjustedX, adjustedY);
-        guiRelativeMousePostion.setLocation(e.getPoint());
+        guiRelativeMousePosition.setLocation(e.getPoint());
     }
 
     @Override
     public void mouseWheelMoved(MouseWheelEvent e) {
         wheelRotation = e.getWheelRotation();
+    }
+
+    public void resetClick() {
+        guiRelativeClick.setLocation(-1, -1);
+        cameraRelativeClick.setLocation(-1, -1);
     }
 }

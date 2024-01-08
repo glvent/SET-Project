@@ -3,12 +3,14 @@ package org.example.ui.utils;
 import org.example.ui.main.map.TileType;
 
 import javax.imageio.ImageIO;
+import javax.sound.sampled.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.net.URL;
 import java.util.ArrayList;
 
 public class Util {
@@ -65,6 +67,18 @@ public class Util {
         g2d.drawImage(original, 0, 0, newWidth, newHeight, null);
         g2d.dispose();
         return scaledImage;
+    }
+
+    public static void playSound(String soundFileName) {
+        try {
+            URL soundFileUrl = Util.class.getResource(soundFileName);
+            AudioInputStream audioIn = AudioSystem.getAudioInputStream(soundFileUrl);
+            Clip clip = AudioSystem.getClip();
+            clip.open(audioIn);
+            clip.start();
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+            e.printStackTrace();
+        }
     }
 
 }

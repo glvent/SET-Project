@@ -6,10 +6,9 @@ import org.example.ui.main.game.gameInterface.Dialogue;
 import org.example.ui.input.KeyHandler;
 import org.example.ui.input.MouseHandler;
 import org.example.ui.main.game.gameObjects.interactableObjects.buildings.Building;
-import org.example.ui.main.game.gameObjects.interactableObjects.buildings.Generator;
 import org.example.ui.main.game.gameObjects.interactableObjects.resources.ResourceInventory;
 import org.example.ui.main.map.GameMap;
-import org.example.ui.utils.Position;
+import org.example.ui.main.game.entities.Position;
 import org.example.ui.utils.Util;
 
 import javax.swing.*;
@@ -29,14 +28,14 @@ public class GamePanel extends JPanel {
     public static final int CAMERA_SPEED = 5;
 
     public GameMap gameMap;
-    public final Dialogue dialogue;
+    public final Dialogue dialogue; // **
     public final Rectangle viewport;
-    private final ArrayList<Entity> entities;
-    public final ResourceInventory resourceInventory;
-    private final Builder builder;
-    public Font gameFont36f;
-    public Font gameFont24f;
-    public Font gameFont16f;
+    private final ArrayList<Entity> entities; // **
+    public final ResourceInventory resourceInventory; // **
+    public final Builder builder;
+    public Font gameFont36f = Util.readFont("/gameFont.ttf", 36f);
+    public Font gameFont24f = Util.readFont("/gameFont.ttf", 24f);
+    public Font gameFont16f = Util.readFont("/gameFont.ttf", 16f);
 
     public final Rectangle returnToBaseButton;
 
@@ -44,9 +43,6 @@ public class GamePanel extends JPanel {
         this.game = game;
         setPreferredSize(new Dimension(SCREEN_WIDTH, SCREEN_HEIGHT));
         setBackground(new Color(50, 50, 50));
-        gameFont36f = Util.readFont("/gameFont.ttf", 36f);
-        gameFont24f = Util.readFont("/gameFont.ttf", 24f);
-        gameFont16f = Util.readFont("/gameFont.ttf", 16f);
 
         keyH = new KeyHandler();
         mouseH = new MouseHandler(this);
@@ -59,7 +55,7 @@ public class GamePanel extends JPanel {
 
         entities = new ArrayList<>();
         camera = new Position(0, 0);
-        dialogue = new Dialogue(keyH, this);
+        dialogue = new Dialogue(this);
         resourceInventory = new ResourceInventory(this);
         builder = new Builder(this);
 
@@ -93,22 +89,13 @@ public class GamePanel extends JPanel {
         // draw fps to screen
         g2.drawString("FPS: " + game.SHOWN_FPS, 0, 15);
 
-        // TODO: figure out how I can stop camera movement
-        //  as well as other modals from opening when one is already open
-
         resourceInventory.render(g2);
         builder.render(g2);
         gameMap.renderMinimap(g2);
         dialogue.render(g2);
 
-        // must render buildings modal outside of class because of rendering layer...
-        // works fine but I want to only ever show one modal at a time anyway...?
-
-        for (Building building : gameMap.getBuildings()) {
-            if (building.getIsModalOpen()) {
-                building.renderModal(g2);
-            }
-        }
+        // don't like this way of rendering out modals...
+        gameMap.getBuildings().forEach(building -> building.renderModal(g2));
 
         renderReturnToBaseButton(g2);
     }
@@ -116,16 +103,12 @@ public class GamePanel extends JPanel {
     public void update() {
         handleCameraMovement();
 
-        // should update things such as entity position, building timer,
-        // resources gained by mine, search parties, etc...
-
         getEntities().forEach(Entity::update);
         gameMap.update();
         dialogue.update();
 
         ArrayList<Building> buildings = gameMap.getTypeOfGameObjects(Building.class);
         buildings.forEach(Building::update);
-
     }
 
     private void handleCameraMovement() {
@@ -177,7 +160,7 @@ public class GamePanel extends JPanel {
 
         returnToBaseButton.setBounds(buttonX, buttonY, buttonWidth, buttonHeight);
 
-        if (mouseH.guiRelativeMousePostion != null && returnToBaseButton.contains(mouseH.guiRelativeMousePostion)) {
+        if (mouseH.guiRelativeMousePosition != null && returnToBaseButton.contains(mouseH.guiRelativeMousePosition)) {
             g2.setColor(new Color(75, 75, 75, 75));
         } else {
             g2.setColor(new Color(35, 35, 35, 75));
@@ -212,7 +195,10 @@ public class GamePanel extends JPanel {
         return entities;
     }
 
-    public Builder getBuilder() {
-        return builder;
+    public void addEntity(Entity entity) {
+        entities.add(entity);
     }
+
+    public void removeEntity() {}
+
 }

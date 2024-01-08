@@ -1,4 +1,4 @@
-package org.example.ui.utils;
+package org.example.ui.main.game.entities;
 
 import java.awt.*;
 

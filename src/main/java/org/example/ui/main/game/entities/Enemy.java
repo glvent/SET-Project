@@ -1,8 +1,6 @@
 package org.example.ui.main.game.entities;
 
 import org.example.ui.main.GamePanel;
-import org.example.ui.utils.Position;
-import org.example.ui.utils.Vector;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -11,14 +9,13 @@ public class Enemy extends Entity {
     private static final int UPDATE_INTERVAL = 0; // greater update intervals will make the enemy become choppy
     private int updateCounter = 0;
 
-    public Enemy(Rectangle position, Vector vector, GamePanel gp) {
-        super(position, vector, gp);
+    public Enemy(Rectangle bounds, GamePanel gp) {
+        super(bounds, gp);
 
         MAX_HEALTH = 100;
         health = 100;
         isEnemy = true;
         image = null;
-        isCollidable = true;
     }
 
     @Override

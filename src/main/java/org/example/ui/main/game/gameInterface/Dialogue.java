@@ -19,23 +19,20 @@ public class Dialogue {
         }
     }
 
-    private ArrayList<Step> steps;
-    private int currentStepIndex;
-    private int charIndex;
+    private ArrayList<Step> steps; // **
+    private int currentStepIndex; // **
+    private int charIndex = 0;
     private long lastCharTime;
     private static final int CHAR_TYPE_DELAY = 75;
     private static final int ARROW_SIZE = 20;
     private boolean isVisible;
     private GamePanel gp;
-    private KeyHandler keyH;
 
-    public Dialogue(KeyHandler keyH, GamePanel gp) {
+    public Dialogue(GamePanel gp) {
         this.gp = gp;
-        this.keyH = keyH;
         this.steps = new ArrayList<>();
         this.isVisible = false;
         this.currentStepIndex = 0;
-        this.charIndex = 0;
         this.lastCharTime = System.currentTimeMillis();
     }
 
@@ -69,7 +66,7 @@ public class Dialogue {
 
     public void update() {
         if (!isVisible || charIndex >= steps.get(currentStepIndex).text.length()) {
-            if (keyH.getCurrentKeyEvent() == KeyEvent.VK_SPACE) {
+            if (gp.keyH.getCurrentKeyEvent() == KeyEvent.VK_SPACE) {
                 nextStep();
             }
             return;
@@ -116,7 +113,7 @@ public class Dialogue {
         addStep("Welcome fellow steampunker!", null);
         addStep("Let me show you around...", null);
         addStep("This here is your shop where you will expand your steam empire.",
-                createArrow(gp.getBuilder().getBounds().x + (gp.getBuilder().getBounds().width / 2), gp.getBuilder().getBounds().y - 10, 'd'));
+                createArrow(gp.builder.getBounds().x + (gp.builder.getBounds().width / 2), gp.builder.getBounds().y - 10, 'd'));
 
         show();
     }

@@ -8,17 +8,25 @@ import java.util.EnumMap;
 import java.util.Map;
 
 public class ResourceInventory {
-    private final Map<ResourceType, Integer> resources;
+    private final Map<ResourceType, Integer> resources; // **
+    private final Map<ResourceType, Integer> resourcesCap; // **
     private static final int BASE_RESOURCE_CAP = 1000;
     private GamePanel gp;
 
     public ResourceInventory(GamePanel gp) {
-        resources = new EnumMap<>(ResourceType.class);
         this.gp = gp;
+
+        resources = new EnumMap<>(ResourceType.class);
+        resourcesCap = new EnumMap<>(ResourceType.class);
 
         for (ResourceType type : ResourceType.values()) {
             resources.put(type, 0);
         }
+
+        for (ResourceType type : ResourceType.values()) {
+            resourcesCap.put(type, BASE_RESOURCE_CAP);
+        }
+
 
         addResource(ResourceType.COPPER, 250);
         addResource(ResourceType.COGS, 250);
@@ -26,7 +34,7 @@ public class ResourceInventory {
     }
 
     public void addResource(ResourceType type, int amt) {
-        if (resources.get(type) + amt <= BASE_RESOURCE_CAP) {
+        if (resources.get(type) + amt <= resourcesCap.get(type)) {
             resources.put(type, resources.get(type) + amt);
         }
     }
@@ -35,11 +43,24 @@ public class ResourceInventory {
         // does not go below 0
         if (resources.get(type) >= amt) {
             resources.put(type, resources.get(type) - amt);
+        } else {
+            Util.playSound("invalid_selection.ogg");
         }
+    }
+
+    public void consumeResource(Map.Entry<ResourceType, Integer> cost) {
+        ResourceType type = cost.getKey();
+        int amt = cost.getValue();
+        consumeResource(type, amt);
     }
 
     public int getResourceAmt(ResourceType type) {
         return resources.get(type);
+    }
+
+    public void increaseResourceCap(ResourceType type, int increaseAmount) {
+        int currentCap = resourcesCap.getOrDefault(type, BASE_RESOURCE_CAP);
+        resourcesCap.put(type, currentCap + increaseAmount);
     }
 
     public void render(Graphics2D g2) {
@@ -54,7 +75,8 @@ public class ResourceInventory {
         int y = BAR_HEIGHT;
 
         for (ResourceType type : ResourceType.values()) {
-            int RESOURCE_AMT = getResourceAmt(type);
+            int RESOURCE_AMT = resources.get(type);
+            int RESOURCE_CAP = resourcesCap.get(type);
             // replace 100 with storageBuilding.resourceCap.get(type);
             int FILLED_WIDTH = (int) (((double) RESOURCE_AMT / BASE_RESOURCE_CAP) * BAR_WIDTH);
 
@@ -64,7 +86,7 @@ public class ResourceInventory {
             g2.setColor(getResourceColor(type));
             g2.fillRoundRect(x, y, FILLED_WIDTH, BAR_HEIGHT, 10, 10);
 
-            String text = type.getName() + ": " + RESOURCE_AMT;
+            String text = type.getName() + ": " + RESOURCE_AMT + " / " + RESOURCE_CAP;
             int TEXT_HEIGHT = fm.getAscent() - fm.getDescent();
             int TEXT_Y = y + (BAR_HEIGHT - TEXT_HEIGHT) / 2 + fm.getAscent();
 

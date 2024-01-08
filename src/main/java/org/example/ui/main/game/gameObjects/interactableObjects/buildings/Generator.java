@@ -6,9 +6,9 @@ import org.example.ui.main.game.gameObjects.interactableObjects.resources.Resour
 import java.awt.*;
 
 public abstract class Generator extends Building {
-    protected int resourcePerHour;
-    protected long lastUpdateTime;
-    protected double accumulatedTime;
+    protected int resourcePerHour; // **
+    protected long lastUpdateTime; // **
+    protected double accumulatedTime; // **
 
     public Generator(int x, int y, GamePanel gp) {
         super(x, y, gp);
@@ -19,7 +19,6 @@ public abstract class Generator extends Building {
 
     @Override
     public void handleBuildingSpecificUpdates() {
-        System.out.println("Generating");
         long currentTime = System.currentTimeMillis();
         long timeElapsed = currentTime - lastUpdateTime; // time in ms
         accumulatedTime += timeElapsed;

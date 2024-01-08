@@ -30,8 +30,22 @@ public class TownHall extends Building {
             case 1 -> {
                 return Map.of(
                         ResourceType.COPPER, 200,
-                        ResourceType.COGS, 150,
+                        ResourceType.COGS, 200,
                         ResourceType.STEAM, 200
+                );
+            }
+            case 2 -> {
+                return Map.of(
+                        ResourceType.COPPER, 500,
+                        ResourceType.COGS, 500,
+                        ResourceType.STEAM, 500
+                );
+            }
+            case 3 -> {
+                return Map.of(
+                        ResourceType.COPPER, 1000,
+                        ResourceType.COGS, 1000,
+                        ResourceType.STEAM, 1000
                 );
             }
         }

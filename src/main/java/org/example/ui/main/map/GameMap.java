@@ -1,6 +1,8 @@
     package org.example.ui.main.map;
 
     import com.raylabz.opensimplex.OpenSimplexNoise;
+    import org.example.ui.main.game.entities.Enemy;
+    import org.example.ui.main.game.entities.Entity;
     import org.example.ui.main.game.gameObjects.*;
     import org.example.ui.main.GamePanel;
     import org.example.ui.main.game.gameObjects.interactableObjects.buildings.Building;
@@ -20,13 +22,15 @@
     import java.util.Set;
 
     public class GameMap {
-        private final Tile[][] tiles;
-        private final ArrayList<GameObject> gameObjects;
+        // ** indicated that it needs to be stored in db and reinitialized
+
+        private final Tile[][] tiles; // **
+        private final ArrayList<GameObject> gameObjects; // **
         private final OpenSimplexNoise noise;
         private final Random rand = new Random();
         private final GamePanel gp;
-        private final Point baseCenter;
-        private final Set<Point> generatedChunks;
+        private final Point baseCenter; // **
+        private final Set<Point> generatedChunks; // **
         public static final int TILE_SIZE = 32;
         public final int MAP_WIDTH; // width in terms of number of tiles
         public final int MAP_HEIGHT; // height in terms of number of tiles
@@ -112,14 +116,42 @@
                 for (int chunkY = startY; chunkY <= endY; chunkY++) {
                     Point chunkPoint = new Point(chunkX, chunkY);
                     if (!generatedChunks.contains(chunkPoint)) {
-                        generateObjectsInChunk(chunkX, chunkY, chunkSize);
+                        spawnEnemiesInChunk(chunkX, chunkY, chunkSize);
+                        generateGameObjectsInChunk(chunkX, chunkY, chunkSize);
                         generatedChunks.add(chunkPoint);
                     }
                 }
             }
         }
 
-        private void generateObjectsInChunk(int chunkX, int chunkY, int chunkSize) {
+        private void spawnEnemiesInChunk(int chunkX, int chunkY, int chunkSize) {
+            double enemySpawnChance = 0.1;
+            int maxEnemiesPerGroup = 3;
+
+            int startX = chunkX * chunkSize;
+            int startY = chunkY * chunkSize;
+            int endX = Math.min(MAP_WIDTH, startX + chunkSize);
+            int endY = Math.min(MAP_HEIGHT, startY + chunkSize);
+
+            for (int x = startX; x < endX; x++) {
+                for (int y = startY; y < endY; y++) {
+                    if (rand.nextDouble() < enemySpawnChance && isSuitableForEnemy(x, y)) {
+                        int groupSize = rand.nextInt(maxEnemiesPerGroup) + 1;
+                        for (int i = 0; i < groupSize; i++) {
+                            int enemyX = x * TILE_SIZE + rand.nextInt(TILE_SIZE);
+                            int enemyY = y * TILE_SIZE + rand.nextInt(TILE_SIZE);
+                            System.out.println(enemyX + ", " + enemyY);
+                            Rectangle enemyBounds = new Rectangle(enemyX, enemyY, 25, 25);
+                            Enemy enemy = new Enemy(enemyBounds, gp);
+                            gp.addEntity(enemy);
+                        }
+                    }
+                }
+            }
+        }
+
+
+        private void generateGameObjectsInChunk(int chunkX, int chunkY, int chunkSize) {
             int startX = chunkX * chunkSize;
             int startY = chunkY * chunkSize;
             int endX = Math.min(MAP_WIDTH, startX + chunkSize);
@@ -134,11 +166,11 @@
                         gameObjects.add(new Cloud(worldX, worldY, gp));
                     }
 
-                    if (isSuitableForCopperVein(x, y) && rand.nextDouble() < 0.01) {
+                    if (isSuitableForCopperVein(x, y) && rand.nextDouble() < 0.1) {
                         gameObjects.add(new CopperVein(worldX, worldY, gp));
                     }
 
-                    if (isSuitableForAetherCrystal(x, y) && rand.nextDouble() < 0.005) {
+                    if (isSuitableForAetherCrystal(x, y) && rand.nextDouble() < 0.05) {
                         gameObjects.add(new AetherCrystal(worldX, worldY, gp));
                     }
 
@@ -147,6 +179,26 @@
                     }
                 }
             }
+        }
+
+        public boolean isTileBuildable(int x, int y) {
+            if (x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT) {
+                return false;
+            }
+            Tile tile = tiles[x][y];
+            return tile.getProps().isBuildable();
+        }
+
+        public boolean isTileOccupied(int x, int y, Dimension buildingSize) {
+            Rectangle buildingArea = new Rectangle(x * TILE_SIZE, y * TILE_SIZE,
+                    buildingSize.width * TILE_SIZE,
+                    buildingSize.height * TILE_SIZE);
+            for (GameObject gameObject : gameObjects) {
+                if (gameObject.getBounds().intersects(buildingArea)) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private boolean isSuitableForCloud(int x, int y) {
@@ -484,10 +536,35 @@
                 for (int y = startY; y <= endY; y++) {
                     if (Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2)) <= radius) {
                         tiles[x][y].setExplored(true);
+                        System.out.println("EXPLORING");
                     }
                 }
             }
         }
+
+        private boolean isSuitableForEnemy(int x, int y) {
+            int minDistanceFromOtherEnemies = 100;
+            int viewportBuffer = TILE_SIZE * minDistanceFromOtherEnemies;
+            Rectangle extendedViewport = new Rectangle(gp.viewport.x - viewportBuffer, gp.viewport.y - viewportBuffer,
+                    gp.viewport.width + 2 * viewportBuffer, gp.viewport.height + 2 * viewportBuffer);
+
+            for (Entity entity : gp.getEntities()) {
+                if (entity instanceof Enemy && extendedViewport.intersects(entity.getBounds())) {
+                    int enemyX = entity.getBounds().x / TILE_SIZE;
+                    int enemyY = entity.getBounds().y / TILE_SIZE;
+                    int distanceX = Math.abs(enemyX - x);
+                    int distanceY = Math.abs(enemyY - y);
+                    double distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
+
+                    if (distance < minDistanceFromOtherEnemies) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+
 
         public TileType determineType(int x, int y) {
             boolean airTop = isTileType(x, y - 1, TileType.AIR);
@@ -535,6 +612,18 @@
 
         public void addGameObject(GameObject gameObject) {
             gameObjects.add(gameObject);
+        }
+
+        public boolean isWalkable(int x, int y) {
+            if (x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT) {
+                return false;
+            }
+
+            boolean isTileWalkable = tiles[x][y].getProps() == TileType.GRASS;
+
+            boolean isTileOccupied = isTileOccupied(x, y, new Dimension(1, 1));
+
+            return isTileWalkable && !isTileOccupied;
         }
 
         public ArrayList<GameObject> getGameObjects() {

@@ -1,30 +1,64 @@
 package org.example.ui.main.game.entities;
 
 import org.example.ui.main.GamePanel;
-import org.example.ui.utils.Vector;
+import org.example.ui.main.game.gameObjects.GameObject;
+import org.example.ui.main.map.GameMap;
+import org.example.ui.main.map.TileType;
+import org.newdawn.slick.util.pathfinding.AStarPathFinder;
+import org.newdawn.slick.util.pathfinding.Path;
+import org.newdawn.slick.util.pathfinding.PathFindingContext;
+import org.newdawn.slick.util.pathfinding.TileBasedMap;
 
 import java.awt.*;
 import java.util.ArrayList;
 
 public abstract class Entity {
-    public Rectangle bounds; // public so I can easily change access without having to create multiple Position objects
-    public Vector vector;
-    protected boolean isEnemy; // might change to be able to have enemies turn to friendly
-    protected boolean isCollidable;
+    protected Rectangle bounds; // needs to be set with image values
+    protected Vector vector; // probably should be static
+    protected boolean isEnemy; // **
     protected Image image;
     protected final GamePanel gp;
-    public static int MAX_HEALTH;
-    public int health;
+    protected static int MAX_HEALTH; // **
+    protected int health; // **
 
+    protected static final int MAX_SEARCH_DISTANCE = 200; // performance impact!
+    protected static final boolean ALLOW_DIAG_MOVEMENT = false; // can be glitchy
+    protected final AStarPathFinder pathfinder;
+    protected Path path;
+    protected int currentStep;
 
-    public Entity(Rectangle bounds, Vector vector, GamePanel gp) {
+    public Entity(Rectangle bounds, GamePanel gp) {
         this.bounds = bounds;
-        this.vector = vector;
         this.gp = gp;
+        this.pathfinder = new AStarPathFinder(new TileBasedMap() {
+            @Override
+            public boolean blocked(PathFindingContext context, int tx, int ty) {
+                return !gp.gameMap.isWalkable(tx, ty);
+            }
+
+            @Override
+            public float getCost(PathFindingContext context, int tx, int ty) {
+                return 1;
+            }
+
+            @Override
+            public int getWidthInTiles() {
+                return gp.gameMap.MAP_WIDTH;
+            }
+
+            @Override
+            public int getHeightInTiles() {
+                return gp.gameMap.MAP_HEIGHT;
+            }
+
+            @Override
+            public void pathFinderVisited(int x, int y) {
+            }
+        }, MAX_SEARCH_DISTANCE, ALLOW_DIAG_MOVEMENT);
     }
 
     public void render(Graphics2D g2) {
-        drawEntity(g2);
+        renderEntity(g2);
         drawHealthBarForEntity(g2);
     }
 
@@ -32,23 +66,21 @@ public abstract class Entity {
 
     public abstract void attack();
 
-    public Rectangle getBounds() {
-        // bounds
-        int width = 20;
-        int height = 20;
-        return new Rectangle(bounds.x, bounds.y, width, height);
-    }
-
     protected boolean checkCollision(int newX, int newY) {
-        // new proposed bounds
-        Rectangle entityBounds = new Rectangle(newX, newY, getBounds().width, getBounds().height);
+        Rectangle newBounds = new Rectangle(newX, newY, bounds.width, bounds.height);
 
-        ArrayList<Entity> entities = gp.getEntities();
-        for (Entity entity : entities) {
-            if (entity != this && entity.isCollidable() && entityBounds.intersects(entity.getBounds())) {
+        for (Entity entity : gp.getEntities()) {
+            if (this != entity && newBounds.intersects(entity.getBounds())) {
                 return true;
             }
         }
+
+        for (GameObject gameObject : gp.gameMap.getGameObjects()) {
+            if (newBounds.intersects(gameObject.getBounds())) {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -56,15 +88,54 @@ public abstract class Entity {
         int newX = bounds.x + dx;
         int newY = bounds.y + dy;
 
-        if (!checkCollision(newX, newY)) {
+        int tileX = newX / GameMap.TILE_SIZE;
+        int tileY = newY / GameMap.TILE_SIZE;
+
+        if (gp.gameMap.getTile(tileX, tileY).getProps() == TileType.GRASS && !checkCollision(newX, newY)) {
             bounds.x = newX;
             bounds.y = newY;
         }
     }
 
-    private void drawEntity(Graphics2D g2) {
+    public void findPath(int targetX, int targetY) {
+        int startX = bounds.x / GameMap.TILE_SIZE;
+        int startY = bounds.y / GameMap.TILE_SIZE;
+        int endX = targetX / GameMap.TILE_SIZE;
+        int endY = targetY / GameMap.TILE_SIZE;
+        path = pathfinder.findPath(null, startX, startY, endX, endY);
+        currentStep = 0;
+    }
+
+    protected void followPath() {
+        if (path != null && currentStep < path.getLength()) {
+            Path.Step step = path.getStep(currentStep);
+            int targetX = step.getX() * GameMap.TILE_SIZE;
+            int targetY = step.getY() * GameMap.TILE_SIZE;
+
+            int speed = 1;
+            int dx = targetX - bounds.x;
+            int dy = targetY - bounds.y;
+
+            dx = Math.min(speed, Math.max(-speed, dx));
+            dy = Math.min(speed, Math.max(-speed, dy));
+
+            moveIfPossible(dx, dy);
+
+            if (Math.abs(bounds.x - targetX) <= speed && Math.abs(bounds.y - targetY) <= speed) {
+                bounds.x = targetX;
+                bounds.y = targetY;
+                currentStep++;
+
+                gp.gameMap.exploreTilesAround(bounds.x / GameMap.TILE_SIZE, bounds.y / GameMap.TILE_SIZE, 5);
+            }
+        }
+    }
+
+    private void renderEntity(Graphics2D g2) {
         g2.setColor(this instanceof Friendly ? Color.WHITE : Color.RED);
-        g2.fillRect(this.bounds.x, this.bounds.y, 20, 20);
+        g2.fillRect(bounds.x, bounds.y, 20, 20);
+
+        drawHealthBarForEntity(g2);
     }
 
     private void drawHealthBarForEntity(Graphics2D g2) {
@@ -72,11 +143,11 @@ public abstract class Entity {
         final int healthBarHeight = 5;
         final int yOffset = -10;
 
-        double healthPercentage = (double) this.health / Entity.MAX_HEALTH;
+        double healthPercentage = (double) health / MAX_HEALTH;
         int currentHealthWidth = (int) (healthBarWidth * healthPercentage);
 
-        int healthBarX = this.bounds.x + (this.bounds.width - healthBarWidth) / 2;
-        int healthBarY = this.bounds.y + yOffset;
+        int healthBarX = bounds.x + (bounds.width - healthBarWidth) / 2;
+        int healthBarY = bounds.y + yOffset;
 
         g2.setColor(Color.RED);
         g2.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
@@ -107,15 +178,7 @@ public abstract class Entity {
         return enemies;
     }
 
-    public boolean isCollidable() {
-        return isCollidable;
-    }
-
-    public boolean isEnemy() {
-        return isEnemy;
-    }
-
-    public Image getImage() {
-        return image;
+    public Rectangle getBounds() {
+        return bounds;
     }
 }
