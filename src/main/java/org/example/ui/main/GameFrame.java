@@ -4,8 +4,8 @@ import javax.swing.*;
 
 public class GameFrame extends JFrame {
 
-    public GameFrame(Game game) {
-        this.add(game.gp);
+    public GameFrame(GamePanel gp) {
+        this.add(gp);
         this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         this.setSize(800, 600);
         this.setLocationRelativeTo(null);

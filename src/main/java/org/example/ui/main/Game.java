@@ -1,20 +1,31 @@
 package org.example.ui.main;
 
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.FirebaseOptions;
+
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.FileInputStream;
 
 public class Game implements Runnable {
-    public GameFrame gf;
-    public GamePanel gp;
-    Thread gameThread;
-    int SHOWN_FPS = 0; // for logging
-    long startTime;
-    long closeTime;
+    private GameFrame gf;
+    private GamePanel gp;
+    private Thread gameThread;
+    public int SHOWN_FPS = 0; // for logging
+    private long startTime;
+    private long closeTime;
+    private GameState currentState;
+
+    private enum GameState {
+        HOME, PAUSED, PLAYING
+    }
 
     public Game() {
         gp = new GamePanel(this);
-        gf = new GameFrame(this);
+        gf = new GameFrame(gp);
         setupExitListener();
+        currentState = GameState.HOME;
     }
 
     private void setupExitListener() {
@@ -44,36 +55,89 @@ public class Game implements Runnable {
         System.exit(0);
     }
 
+    public static void initializeFirebase() {
+        try {
+            FileInputStream serviceAccount = new FileInputStream("env.json");
+
+            FirebaseOptions options = new FirebaseOptions.Builder()
+                    .setCredentials(GoogleCredentials.fromStream(serviceAccount))
+                    .setProjectId("set-project-ec576")
+                    .build();
+
+            FirebaseApp.initializeApp(options);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     @Override
     public void run() {
-        int FPS_LIMIT = 120;
-        double drawInterval = 1000000000d / FPS_LIMIT;
+        long lastTime = System.nanoTime();
+        double amountOfTicks = 60.0;
+        double ns = 1000000000 / amountOfTicks;
         double delta = 0;
-        double lastTime = System.nanoTime();
-        double currentTime;
-        long timer = 0;
-        int frameCount = 0;
+        long timer = System.currentTimeMillis();
+        int frames = 0;
 
         while (gameThread != null) {
-            currentTime = System.nanoTime();
-
-            delta += (currentTime - lastTime) / drawInterval;
-            timer += (long) (currentTime - lastTime);
-            lastTime = currentTime;
-
-            if (delta > 0) {
-                gp.update();
-                gp.repaint();
+            long now = System.nanoTime();
+            delta += (now - lastTime) / ns;
+            lastTime = now;
+            while (delta >= 1) {
+                switch (currentState) {
+                    case PLAYING:
+                        updatePlaying();
+                        break;
+                    case PAUSED:
+                        updatePaused();
+                        break;
+                    case HOME:
+                        updateHome();
+                        break;
+                }
                 delta--;
-                frameCount++;
             }
+            if (gameThread != null) {
+                render();
+                frames++;
 
-            if (timer >= 1000000000) {
-                SHOWN_FPS = frameCount;
-                frameCount = 0;
-                timer = 0;
-                System.out.println(".");
+                if (System.currentTimeMillis() - timer > 1000) {
+                    timer += 1000;
+                    SHOWN_FPS = frames;
+                    frames = 0;
+                }
             }
         }
     }
+
+    private void updatePlaying() {
+
+    }
+
+    private void updatePaused() {
+
+    }
+
+    private void updateHome() {
+
+    }
+
+    private void render() {
+
+    }
+
+    // State transition methods
+    public void pauseGame() {
+        currentState = GameState.PAUSED;
+    }
+
+    public void resumeGame() {
+        currentState = GameState.PLAYING;
+    }
+
+    public void goToHome() {
+        currentState = GameState.HOME;
+    }
+
+
 }
